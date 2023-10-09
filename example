@@ -1,0 +1,120 @@
+임시
+
+아두이노 ide 코드드
+
+const int ledPin = 13;
+const int speakerPin = 4;
+const int switchPin = 2; // 스위치 연결 핀 번호
+
+int lastSwitchState = LOW; // 마지막 스위치 상태 저장
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
+  pinMode(switchPin, INPUT_PULLUP); // 내부 풀업 저항 활성화
+  
+  Serial.begin(9600);
+}
+
+void loop() {
+
+   if (Serial.available()) {
+    char val = Serial.read();
+
+    if(val == '1') {
+      digitalWrite(ledPin, HIGH);
+    } 
+    else if (val == '2') {
+      digitalWrite(ledPin, LOW);
+    }
+    
+    else if (val == '3'){ 
+      playSong();
+    }
+   }
+   int switchState = digitalRead(switchPin);
+
+  if (switchState == HIGH) {
+    Serial.println("4");
+  } else {
+    Serial.println("5");
+  }
+
+  delay(300);
+}
+void playSong(){
+     tone(speakerPin, 523, 500); delay(500); //Do
+     tone(speakerPin, 523, 500); delay(500); //Do
+     tone(speakerPin, 783, 500); delay(500); //Sol
+     tone(speakerPin, 783, 500); delay(500); //Sol
+     tone(speakerPin, 880, 500); delay(500); //La
+     tone(speakerPin, 880, 500); delay(500); //La
+     tone(speakerPin, 783, 500); delay(500); //Sol 
+}
+
+
+
+프로세싱 코드
+
+
+import processing.net.*;
+import processing.serial.*;
+
+Server server;
+Serial myPort;
+int switchPin = 2; // 스위치 핀 번호
+
+String switchState = "off";
+
+void setup() {
+  String portName = Serial.list()[0];
+  myPort = new Serial(this, "COM8", 9600);
+  server = new Server(this, 12345);
+}
+
+void draw() {
+  Client thisClient = server.available();
+
+  if (thisClient != null) {
+    String whatClientSaid = thisClient.readString();
+    whatClientSaid = trim(whatClientSaid);
+
+    char lastCharInURL = whatClientSaid.charAt(whatClientSaid.length() - 1);
+
+    println("클라이언트에서 받음: " + whatClientSaid);
+
+    if (lastCharInURL == '1') {
+      myPort.write('1');
+      println("LED 켜짐");
+      switchState = "on";
+    } else if (lastCharInURL == '2') {
+      myPort.write('2');
+      println("LED 꺼짐");
+      switchState = "off";
+    } else if (lastCharInURL == '3') {
+      myPort.write('3');
+      println("Play Song");
+    } else if (lastCharInURL == '0')
+      // 아두이노에서 스위치 상태를 받아오기
+
+       if (myPort.available() > 0) {
+     String val = myPort.readStringUntil('\n');  
+     
+     if(val != null){
+       val = trim(val);
+       
+       if(val.equals("4")){
+         background(0,255,0);
+         server.write("4");
+       }
+       else if(val.equals("5")){
+         background(0);
+         server.write("5");
+       }
+     }
+   }
+
+    server.write(switchState);
+    delay(100);
+  }
+}
