@@ -114,6 +114,8 @@ void draw() {
      }
    }
 
+
+https://github.com/red-straw/example/assets/144910907/645b750a-78f4-4900-8372-7e67465e1131
     server.write(switchState);
     delay(100);
   }
