@@ -1,80 +1,115 @@
 아두이노 코드
-void setup() {
+const int ledPin = 13;
+const int speakerPin = 4;
+const int switchPin = 2; // 스위치 연결 핀 번호
 
-  pinMode(13, OUTPUT);
-  pinMode(7, INPUT_PULLUP);
-  Serial.begin(9600);
+int lastSwitchState = LOW; // 마지막 스위치 상태 저장
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
+  pinMode(switchPin, INPUT_PULLUP); // 내부 풀업 저항 활성화
   
+  Serial.begin(9600);
 }
 
 void loop() {
 
-  int sw = digitalRead(7);
-    Serial.println(sw);
-    delay(1000);
+   if (Serial.available()) {
+    char val = Serial.read();
 
-  String m = Serial.readStringUntil('\n');
-  if(m == "on") digitalWrite(13, HIGH);
-  if(m == "off") digitalWrite(13, LOW);
-  
-  if(m == "song") { 
-    tone(4, 523, 500); // 도
-    delay(500);
-    tone(4, 523, 500); // 도
-    delay(500);
-    tone(4, 783, 500); // 솔
-    delay(500);
-    tone(4, 783, 500); // 솔
-    delay(500);
-    tone(4, 880, 500); // 라
-    delay(500);
-    tone(4, 880, 500); // 라
-    delay(500);
-    tone(4, 783, 500); // 솔
-    delay(500);
+    if(val == '1') {
+      digitalWrite(ledPin, HIGH);
+    } 
+    else if (val == '2') {
+      digitalWrite(ledPin, LOW);
+    }
+    
+    else if (val == '3'){ 
+      playSong();
+    }
+   }
+   int switchState = digitalRead(switchPin);
+
+  if (switchState == HIGH) {
+    Serial.println("4");
+  } else {
+    Serial.println("5");
   }
+
+  delay(300);
 }
+void playSong(){
+     tone(speakerPin, 523, 500); delay(500); //Do
+     tone(speakerPin, 523, 500); delay(500); //Do
+     tone(speakerPin, 783, 500); delay(500); //Sol
+     tone(speakerPin, 783, 500); delay(500); //Sol
+     tone(speakerPin, 880, 500); delay(500); //La
+     tone(speakerPin, 880, 500); delay(500); //La
+     tone(speakerPin, 783, 500); delay(500); //Sol 
+}
+
 
 
 프로세싱 코드
 
 
 
-import processing.serial.*;
 import processing.net.*;
-Serial p;
-Server s;
-Client c;
+import processing.serial.*;
+
+Server server;
+Serial myPort;
+int switchPin = 2; // 스위치 핀 번호
+
+String switchState = "off";
 
 void setup() {
-  p = new Serial(this, "COM8", 9600);
-  s = new Server(this, 12345);
+  String portName = Serial.list()[0];
+  myPort = new Serial(this, "COM8", 9600);
+  server = new Server(this, 12345);
 }
 
-String msg="hi"; //초기값 hi
 void draw() {
-  c = s.available();
-  if (c!=null) {
-    
-    String m = c.readString();
-    if (m.indexOf("GET /")==0) {
-      c.write("HTTP/1.1 200 OK\r\n\r\n"); //스마트폰으로 보내기
-      c.write(msg);
-    }
-    c.stop(); //요청을 무한대로 받지않기 위해 닫았다 열어주기
-    
-    if (m.indexOf("PUT /")==0) { //아두이노로 보내기
-      int n = m.indexOf("\r\n\r\n")+4; // on-off 위치
-      //4바이트의 구분자 HTTP요청 본문 잘라내기
-      m = m.substring(n); // on-off 잘라 내는 위치   //
-      m += '\n';           // 표시할 문자
-      p.write(m); // 시리얼 포트로 on-off 보내기 
-      print(m);
-    }
-  }
-  if (p.available()>0) { // 시리얼 데이터 읽기
-    String m = p.readStringUntil('\n');
-    if (m!=null)  msg = m; //hi값을 아두이노에서 받은 데이터로
-    print(msg);
+  Client thisClient = server.available();
+
+  if (thisClient != null) {
+    String whatClientSaid = thisClient.readString();
+    whatClientSaid = trim(whatClientSaid);
+
+    char lastCharInURL = whatClientSaid.charAt(whatClientSaid.length() - 1);
+
+    println("클라이언트에서 받음: " + whatClientSaid);
+
+    if (lastCharInURL == '1') {
+      myPort.write('1');
+      println("LED 켜짐");
+      switchState = "on";
+    } else if (lastCharInURL == '2') {
+      myPort.write('2');
+      println("LED 꺼짐");
+      switchState = "off";
+    } else if (lastCharInURL == '3') {
+      myPort.write('3');
+      println("Play Song");
+    } else if (lastCharInURL == '0')
+      // 아두이노에서 스위치 상태를 받아오기
+
+       if (myPort.available() > 0) {
+     String val = myPort.readStringUntil('\n');  
+     
+     if(val != null){
+       val = trim(val);
+       
+       if(val.equals("4")){
+         server.write("4");
+       }
+       else if(val.equals("5")){
+         server.write("5");
+       }
+     }
+   }
+
+    server.write(switchState);
   }
 }
