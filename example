@@ -93,11 +93,9 @@ void draw() {
        val = trim(val);
        
        if(val.equals("4")){
-         background(0,255,0);
          server.write("4");
        }
        else if(val.equals("5")){
-         background(0);
          server.write("5");
        }
      }
@@ -105,7 +103,6 @@ void draw() {
     server.write(switchState);
   }
 }
-
 
 
 https://github.com/red-straw/example/assets/144910907/f70d2fbc-bfa5-43e0-b31e-7c8c250e6093
